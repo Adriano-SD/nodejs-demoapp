@@ -1,4 +1,4 @@
-name: Snyk Example
+name: Snyk Scan via CLI
 
 on:
   workflow_dispatch:
@@ -10,8 +10,10 @@ permissions:
 jobs:
   security:
     runs-on: ubuntu-latest
+
     steps:
-      - uses: actions/checkout@v3
+      - name: Checkout code
+        uses: actions/checkout@v3
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -21,9 +23,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@v1
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk Test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: test
+        run: snyk test
