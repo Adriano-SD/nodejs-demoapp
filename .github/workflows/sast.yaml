@@ -1,16 +1,19 @@
 name: Snyk Example
+
 on: 
   workflow_dispatch:
+
 permissions:
   contents: read
   issues: write
+  
 jobs:
   security:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - uses: snyk/actions/setup@master
+      - uses: snyk/actions/setup@v3
 
       - name: Setup Go
         uses: actions/setup-go@v5
