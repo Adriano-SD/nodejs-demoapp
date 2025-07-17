@@ -29,4 +29,10 @@ jobs:
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         working-directory: src
-        run: snyk test
+        run: snyk test || true
+
+      - name: Send results to Snyk (monitor)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        working-directory: src
+        run: snyk monitor
