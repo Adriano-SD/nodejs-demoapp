@@ -1,69 +1,51 @@
-name: Pipe DevSecOps
+name: DevSecOps Full Pipeline
 
 on:
-  workflow_dispatch:
-  pull_request: {}
-  push:
+  workflow_dispatch: {}
+  pull_request:
     branches:
-    - main
-    - master
-
+      - main
+      - master
+      
 permissions:
       contents: read
-    
+      issues: write
+      
 jobs:
 
-#----SAST----#
+#---- SAST com Semgrep ----#
   semgrep:
-    name: SAST-SEMGREP
+    name: SAST - Semgrep
     runs-on: ubuntu-latest
     permissions:
-        contents: read
+      contents: read
     env:
       SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
     container:
       image: semgrep/semgrep
     steps:
     - uses: actions/checkout@v4
-    - run: semgrep ci
+    #- run: semgrep ci
+    - run: semgrep --config p/owasp-top-ten --json --output semgrep.json .
 
+#---- SCA com Snyk ----#
   sca-snyk:
+    name: Snyk with High threshold
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v3
+      - uses: actions/checkout@master
+      - name: Run Snyk to check for vulnerabilities
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
-          node-version: 18
+          args: --severity-threshold=high
 
-      - name: Install dependencies
-        working-directory: src
-        run: npm install
-
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-
-      - name: Run Snyk Test
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        working-directory: src
-        run: snyk test || true
-
-      - name: Send results to Snyk (monitor)
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        working-directory: src
-        run: snyk monitor
-
-  dast-zap:
+#---- DAST com ZAP ----#
+  zap_scan:
     runs-on: ubuntu-latest
     name: Scan the webapplication
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: master
       - name: ZAP Scan
         uses: zaproxy/action-baseline@v0.14.0
         with:
@@ -72,3 +54,15 @@ jobs:
           target: 'https://musical-happiness-pjggq6prxq9vh69q6-3000.app.github.dev/'
           rules_file_name: '.zap/rules.tsv'
           cmd_options: '-a'
+
+# --- Secrets scan com Gitleaks --- #
+  secrets_gitleaks:
+    name: Secret Scan - Gitleaks
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
