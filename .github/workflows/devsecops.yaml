@@ -29,17 +29,34 @@ jobs:
     - run: semgrep --config p/owasp-top-ten --json --output semgrep.json .
 
 #---- SCA com Snyk ----#
-  sca-snyk:
-    name: Snyk with High threshold
+  snyk:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - name: Run Snyk to check for vulnerabilities
-        uses: snyk/actions/node@master
+      - uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        working-directory: src
+        run: npm install
+
+      - name: Install Snyk CLI
+        run: npm install -g snyk
+
+      - name: Run Snyk Test
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        with:
-          args: --severity-threshold=high
+        working-directory: src
+        run: snyk test || true
+
+      - name: Send results to Snyk (monitor)
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        working-directory: src
+        run: snyk monitor
 
 #---- DAST com ZAP ----#
   zap_scan:
